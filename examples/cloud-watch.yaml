@@ -1,0 +1,13 @@
+disks:
+  - label: "Home"
+    path: "/home"
+    threshold: 8.19
+
+memory:
+  usageThreshold: 90
+
+interval: 1
+
+notification:
+  SMTP:
+    email: "erichnascimento@gmail.com"
