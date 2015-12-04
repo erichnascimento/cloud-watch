@@ -38,22 +38,7 @@ func main() {
 	}
 
 	log.Printf("starting monitor")
-	watch.StartMonitor(c)
+	watch.NewMonitor(c).Start()
 	gracefully.Shutdown()
 	log.Printf("stopping monitor")
-	//c.Stop()
-
-	log.Printf("bye :)")
-
-	/*for _, d := range c.Disks {
-		dinfo, err := watch.CollectDiskInfo(d.Path, d.Label)
-		if err != nil {
-			log.Fatalf("error collecting disk info (%s): %s", d.Label, err)
-		}
-
-		log.Printf("Espaço total: %s", humanize.Bytes(dinfo.All))
-		log.Printf("Espaço Usado: %s (%.0f%%)", humanize.Bytes(dinfo.Used), dinfo.UsedPercentage())
-		log.Printf("Espaço Livre: %s", humanize.Bytes(dinfo.Free))
-	}*/
-
 }

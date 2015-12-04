@@ -1,8 +1,8 @@
-package watch
+package disk
 
 import "syscall"
 
-type DiskInfo struct {
+type Info struct {
 	Path  string
 	Label string
 	All   uint64
@@ -10,11 +10,11 @@ type DiskInfo struct {
 	Free  uint64
 }
 
-func (d *DiskInfo) UsedPercentage() float64 {
+func (d *Info) UsedPercentage() float64 {
 	return (float64(d.Used) / float64(d.All)) * 100
 }
 
-func CollectDiskInfo(path string, label string) (*DiskInfo, error) {
+func CollectDiskInfo(path string, label string) (*Info, error) {
 	buf := syscall.Statfs_t{}
 	err := syscall.Statfs(path, &buf)
 
@@ -23,9 +23,9 @@ func CollectDiskInfo(path string, label string) (*DiskInfo, error) {
 	}
 
 	all := uint64(buf.Bsize) * buf.Blocks
-	free := uint64(buf.Bsize) * buf.Bfree
+	free := uint64(buf.Bsize) * buf.Bavail
 
-	info := &DiskInfo{
+	info := &Info{
 		Path:  path,
 		Label: label,
 		All:   all,

@@ -1,46 +1,46 @@
 package watch
 
 import (
-	"log"
 	"time"
 
 	"github.com/erichnascimento/cloud-watch/config"
+	"github.com/erichnascimento/cloud-watch/notification"
+	"github.com/erichnascimento/cloud-watch/watch/disk"
 )
 
 type Monitor struct {
-	interval      <-chan time.Time
-	config        *config.Config
-	diskInfoQueue chan *DiskInfo
+	interval      *time.Ticker
+	diskInfoQueue chan *disk.Info
+	diskProducer  *disk.Producer
+	dispatcher    *notification.Dispatcher
 }
 
-func (m *Monitor) startProducer() {
-	for range m.interval {
-		for _, d := range m.config.Disks {
-			info, err := CollectDiskInfo(d.Path, d.Label)
-			if err != nil {
-				log.Fatalf("error collecting disk (%s) info: %s", d.Label, err)
-			}
-			if info.UsedPercentage() >= d.Threshold {
-				m.diskInfoQueue <- info
-			}
+func (m *Monitor) Reconfigure(c *config.Config) {
+	m.interval = time.NewTicker(time.Second * c.Interval)
+	m.dispatcher = notification.NewDispatcher(c.Notification)
+	m.diskProducer = disk
+	m.diskInfoQueue = make(chan *disk.Info, m.diskProducer.TotalDisks())
+}
+
+func (m *Monitor) Start() {
+	func() {
+		for {
+			<-m.interval.C
+			m.exec()
 		}
-	}
+	}()
 }
 
-func (m *Monitor) startDiskConsumer() {
-	for info := range m.diskInfoQueue {
-		log.Printf("DANGER: Disk %s (%s) Usage: %.2f%%", info.Label, info.Path, info.UsedPercentage())
-	}
+func (m *Monitor) exec() {
+	m.diskProducer.Produce()
 }
 
-func StartMonitor(c *config.Config) error {
-	monitor := new(Monitor)
-	monitor.config = c
-	monitor.interval = time.Tick(time.Second * monitor.config.Interval)
-	monitor.diskInfoQueue = make(chan *DiskInfo)
+func NewMonitor(c *config.Config) *Monitor {
+	m := new(Monitor)
+	m.Reconfigure(c)
 
-	go monitor.startProducer()
-	go monitor.startDiskConsumer()
-
-	return nil
+	//diskInfo := notification.NewDispatcher(c.Notification).Start()
+	//disk.NewProducer(monitor.interval, c.Disks).Start(diskInfo)
+	//
+	return m
 }
