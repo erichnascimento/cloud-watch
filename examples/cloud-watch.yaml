@@ -1,6 +1,6 @@
 disks:
-  - label: "Home"
-    path: "/home"
+  - label: "Boot"
+    path: "/boot"
     threshold: 8.19
 
 memory:

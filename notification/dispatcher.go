@@ -10,26 +10,24 @@ import (
 )
 
 type Dispatcher struct {
-	config   config.Notification
-	diskInfo chan *disk.Info
-	mailer   *email.Mailer
+	config    config.Notification
+	diskInfos <-chan *disk.Info
+	mailer    *email.Mailer
 }
 
-func NewDispatcher(c config.Notification) *Dispatcher {
-	return &Dispatcher{c, make(chan *disk.Info), email.NewMailer()}
+func NewDispatcher(c config.Notification, diskInfos <-chan *disk.Info) *Dispatcher {
+	return &Dispatcher{c, diskInfos, email.NewMailer()}
 }
 
-func (d *Dispatcher) Start() chan<- *disk.Info {
+func (d *Dispatcher) Start() {
 	go func() {
 		for {
 			select {
-			case info := <-d.diskInfo:
+			case info := <-d.diskInfos:
 				d.sendDiskNotification(info)
 			}
 		}
 	}()
-
-	return d.diskInfo
 }
 
 func (d *Dispatcher) sendDiskNotification(info *disk.Info) {

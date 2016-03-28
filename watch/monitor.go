@@ -17,30 +17,33 @@ type Monitor struct {
 
 func (m *Monitor) Reconfigure(c *config.Config) {
 	m.interval = time.NewTicker(time.Second * c.Interval)
-	m.dispatcher = notification.NewDispatcher(c.Notification)
-	m.diskProducer = disk
-	m.diskInfoQueue = make(chan *disk.Info, m.diskProducer.TotalDisks())
+	m.diskInfoQueue = make(chan *disk.Info, len(c.Disks))
+
+	m.dispatcher = notification.NewDispatcher(c.Notification, m.diskInfoQueue)
+
+	m.diskProducer = disk.NewProducer(c.Disks, m.diskInfoQueue)
 }
 
 func (m *Monitor) Start() {
+	// starts metric consumers
+	m.dispatcher.Start()
+
 	func() {
 		for {
-			<-m.interval.C
+			// execute metric producers
 			m.exec()
+			<-m.interval.C
 		}
 	}()
 }
 
 func (m *Monitor) exec() {
-	m.diskProducer.Produce()
+	go m.diskProducer.Produce()
 }
 
 func NewMonitor(c *config.Config) *Monitor {
 	m := new(Monitor)
 	m.Reconfigure(c)
 
-	//diskInfo := notification.NewDispatcher(c.Notification).Start()
-	//disk.NewProducer(monitor.interval, c.Disks).Start(diskInfo)
-	//
 	return m
 }
